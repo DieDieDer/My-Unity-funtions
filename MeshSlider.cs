@@ -170,7 +170,7 @@ public class MeshSlider : MeshSliderSimple
         int orgCount = slideFacePointDatas.Count;
         for (int i = 0, c = 0; i < orgCount; c++)
         {
-            if (c > 5000)//(不應該發生)
+            if (c > 5000)//(Error?)
             {
                 Debug.LogError("Loop over 5000");
                 break;
@@ -192,7 +192,7 @@ public class MeshSlider : MeshSliderSimple
                     int connectCount = 0;
                     for (int k = j + 1, c2 = 0; ; k++, c2++)
                     {
-                        if (c2 > 5000)//(不應該發生)
+                        if (c2 > 5000)//(Error?)
                         {
                             Debug.LogError("Loop over 5000");
                             haveConcave = false;
@@ -214,8 +214,6 @@ public class MeshSlider : MeshSliderSimple
                         if (point2.isConcave)//遇到另一個凸角
                         {
                             debugDrawWireCube(slideFacePointDatas[i][k].pos, 0.2f, Color.yellow);
-                            //int indexDelta = Mathf.Abs(k - j);
-                            //if (indexDelta < 2 || indexDelta == slideFacePointDatas[i].Count - 1)//遇到的是在相鄰格
                             if (connectCount < 2)//遇到的是在相鄰格
                             {
                                 //if (k == j + 1 || (j == slideFacePointDatas[i].Count - 1 && k == 0))//遇到在下一格
