@@ -24,13 +24,13 @@ public class MeshSlicerSimple
     protected List<Vector2> SelectUV(bool index) { return index ? meshUV : otherUV; }
     protected List<int> SelectVerticesIndex(bool index) { return index ? meshVerticesIndex : otherVerticesIndex; }
 
-    protected List<int> slideFaceEdges1 = new List<int>();
-    protected List<int> slideFaceEdges2 = new List<int>();
+    protected List<int> sliceFaceEdges1 = new List<int>();
+    protected List<int> sliceFaceEdges2 = new List<int>();
 
     protected Mesh mesh;
     protected Plane plane;
 
-    public virtual Transform[] slideMesh(Plane _plane, Transform obj)
+    public virtual Transform[] sliceMesh(Plane _plane, Transform obj)
     {
         //宣告&取得
         meshTriangles = new List<int>();
@@ -163,10 +163,10 @@ public class MeshSlicerSimple
             newIndexB1 = newPointIndexA1;
             newIndexB2 = newPointIndexA2;
         }
-        slideFaceEdges1.Add(indexA1);
-        slideFaceEdges1.Add(indexA2);
-        slideFaceEdges2.Add(indexB1);
-        slideFaceEdges2.Add(indexB2);
+        sliceFaceEdges1.Add(indexA1);
+        sliceFaceEdges1.Add(indexA2);
+        sliceFaceEdges2.Add(indexB1);
+        sliceFaceEdges2.Add(indexB2);
 
         addExistTriangle(!side, new int[] { originalIndexs[0], originalIndexs[1], -1 }, new int[] { 0, 0, newIndexB1 }, points[0], points[1], newPoint1);
         addExistTriangle(!side, new int[] { originalIndexs[1], -1, -1 }, new int[] { 0, newIndexB2, newIndexB1 }, points[1], newPoint2, newPoint1);
@@ -253,23 +253,23 @@ public class MeshSlicerSimple
         Vector3 centerPoint = Vector3.zero;
         int mvc = meshVertices.Count;
         int ovc = otherVertices.Count;
-        for (int i = 0; i < slideFaceEdges1.Count; i += 2)
+        for (int i = 0; i < sliceFaceEdges1.Count; i += 2)
         {
-            centerPoint += meshVertices[slideFaceEdges1[i]];
-            centerPoint += meshVertices[slideFaceEdges1[i + 1]];
-            meshTriangles.Add(slideFaceEdges1[i]);
-            meshTriangles.Add(slideFaceEdges1[i + 1]);
+            centerPoint += meshVertices[sliceFaceEdges1[i]];
+            centerPoint += meshVertices[sliceFaceEdges1[i + 1]];
+            meshTriangles.Add(sliceFaceEdges1[i]);
+            meshTriangles.Add(sliceFaceEdges1[i + 1]);
             meshTriangles.Add(mvc);
         }
 
-        for (int i = 0; i < slideFaceEdges2.Count; i += 2)
+        for (int i = 0; i < sliceFaceEdges2.Count; i += 2)
         {
-            otherTriangles.Add(slideFaceEdges2[i]);
-            otherTriangles.Add(slideFaceEdges2[i + 1]);
+            otherTriangles.Add(sliceFaceEdges2[i]);
+            otherTriangles.Add(sliceFaceEdges2[i + 1]);
             otherTriangles.Add(ovc);
         }
 
-        centerPoint /= slideFaceEdges1.Count;
+        centerPoint /= sliceFaceEdges1.Count;
 
         meshVertices.Add(centerPoint);
         otherVertices.Add(centerPoint);
