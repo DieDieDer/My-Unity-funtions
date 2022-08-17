@@ -247,20 +247,13 @@ public class MeshSlicer : MeshSlicerSimple
                         if (point2.isConcave)//遇到另一個凸角
                         {
                             debugDrawWireCube(sliceFacePointDatas[i][k].pos, 0.2f, Color.yellow);
-                            //int indexDelta = Mathf.Abs(k - j);
-                            //if (indexDelta < 2 || indexDelta == sliceFacePointDatas[i].Count - 1)//遇到的是在相鄰格
                             if (connectCount < 2)//遇到的是在相鄰格
                             {
-                                //if (k == j + 1 || (j == sliceFacePointDatas[i].Count - 1 && k == 0))//遇到在下一格
-                                {
-                                    j = k;
-                                    point = point2;
-                                    connectCount = 0;
-                                    Debug.Log("Reset!");
-                                    continue;
-                                }
-                                //else//遇到在前一格(不應該發生)
-                                { Debug.LogError("Concave error: Concave behind point " + k + " " + j + " " + sliceFacePointDatas[i].Count); }
+                                j = k;
+                                point = point2;
+                                connectCount = 0;
+                                Debug.Log("Reset!");
+                                continue;
                             }
                             else//正常切割
                             {
