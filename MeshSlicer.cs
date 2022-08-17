@@ -265,7 +265,7 @@ public class MeshSlicer : MeshSlicerSimple
                             else//正常切割
                             {
                                 slicePoints(sliceFacePointDatas[i], j, k);
-                                Debug.Log("Slide concave");
+                                Debug.Log("Slice concave");
                             }
 
                             break;
@@ -278,7 +278,7 @@ public class MeshSlicer : MeshSlicerSimple
                             if (accAngle > 180)//累積角度>180
                             {
                                 slicePoints(sliceFacePointDatas[i], j, k);
-                                Debug.Log("Slide accAngle");
+                                Debug.Log("Slice accAngle");
                                 break;
                             }
                         }
