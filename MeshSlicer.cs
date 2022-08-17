@@ -3,14 +3,47 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class MeshSlider : MeshSliderSimple
+public class MeshSlicer : MeshSlicerSimple
 {
-    List<List<PointData>> slideFacePointDatas;
-
-    public override BasicObject[] slideMesh(Plane _plane, BasicObject obj)
+    protected class PointData
     {
-        slideFacePointDatas = new List<List<PointData>>();
-        return base.slideMesh(_plane, obj);
+        public Vector3 pos;
+        public int triIndex1;//正反面的位置可能不同? 多宣告一個紀錄?
+        public int triIndex2;
+        public bool isConcave;//是否為凹邊(背景大於圖形)
+        public float angle;
+        public bool computed;
+
+        public PointData(Vector3 _pos, int _triIndex1, int _triIndex2)
+        {
+            pos = _pos;
+            triIndex1 = _triIndex1;
+            triIndex2 = _triIndex2;
+            isConcave = false;
+            angle = 0;
+            computed = false;
+        }
+
+        public bool computeAngle(Plane _plane, Vector3 prevPoint, Vector3 nextPoint)
+        {
+            angle = Vector3.SignedAngle(nextPoint - pos, pos - prevPoint, _plane.normal);
+
+            if (angle < 0)
+                angle += 360;
+
+            isConcave = (angle > 180);
+            computed = true;
+
+            return isConcave;
+        }
+    }
+
+    List<List<PointData>> sliceFacePointDatas;
+
+    public override Transform[] sliceMesh(Plane _plane, Transform obj)
+    {
+        sliceFacePointDatas = new List<List<PointData>>();
+        return base.sliceMesh(_plane, obj);
     }
 
 
@@ -59,17 +92,17 @@ public class MeshSlider : MeshSliderSimple
         */
 
         //  ~處理陣列
-        for (int i = 0; i < slideFacePointDatas.Count; i++)
+        for (int i = 0; i < sliceFacePointDatas.Count; i++)
         {
-            for (int j = 0; j < slideFacePointDatas[i].Count; j++)
+            for (int j = 0; j < sliceFacePointDatas[i].Count; j++)
             {
-                if (slideFacePointDatas[i][j].pos == pointA)
+                if (sliceFacePointDatas[i][j].pos == pointA)
                 {
                     containP1 = true;
                     indexP1 = new int[] { i, j };
                     if (containP1 && containP2) break;
                 }
-                if (slideFacePointDatas[i][j].pos == pointB)
+                if (sliceFacePointDatas[i][j].pos == pointB)
                 {
                     containP2 = true;
                     indexP2 = new int[] { i, j };
@@ -82,21 +115,21 @@ public class MeshSlider : MeshSliderSimple
         {
             if (indexP1[0] != indexP2[0])//要把最後一個頭尾相連的排除
             {
-                slideFacePointDatas[indexP1[0]].AddRange(slideFacePointDatas[indexP2[0]]);
-                slideFacePointDatas.RemoveAt(indexP2[0]);
+                sliceFacePointDatas[indexP1[0]].AddRange(sliceFacePointDatas[indexP2[0]]);
+                sliceFacePointDatas.RemoveAt(indexP2[0]);
             }
         }
         else if (containP1)//結果3 插入另一個點
         {
-            slideFacePointDatas[indexP1[0]].Insert(indexP1[1] + 1, new PointData(pointB, indexA2, indexB2));
+            sliceFacePointDatas[indexP1[0]].Insert(indexP1[1] + 1, new PointData(pointB, indexA2, indexB2));
         }
         else if (containP2)//結果3 插入另一個點
         {
-            slideFacePointDatas[indexP2[0]].Insert(indexP2[1], new PointData(pointA, indexA1, indexB1));
+            sliceFacePointDatas[indexP2[0]].Insert(indexP2[1], new PointData(pointA, indexA1, indexB1));
         }
         else// if (!containP1 && !containP2)//結果1 結果2 直接加
         {
-            slideFacePointDatas.Add(new List<PointData>()
+            sliceFacePointDatas.Add(new List<PointData>()
             {
                 new PointData(pointA, indexA1, indexB1),
                 new PointData(pointB, indexA2, indexB2) }
@@ -112,16 +145,16 @@ public class MeshSlider : MeshSliderSimple
     {
         subdividePointDatas();
         
-        for (int i = 0; i < slideFacePointDatas.Count; i++)
+        for (int i = 0; i < sliceFacePointDatas.Count; i++)
         {
-            if (slideFacePointDatas[i].Count > 2)
+            if (sliceFacePointDatas[i].Count > 2)
             {
                 //add point0
-                meshVertices.Add(slideFacePointDatas[i][0].pos);
-                meshUV.Add(meshUV[slideFacePointDatas[i][0].triIndex1]);
+                meshVertices.Add(sliceFacePointDatas[i][0].pos);
+                meshUV.Add(meshUV[sliceFacePointDatas[i][0].triIndex1]);
                 meshNormal.Add(-plane.normal);
-                otherVertices.Add(slideFacePointDatas[i][0].pos);
-                otherUV.Add(otherUV[slideFacePointDatas[i][0].triIndex2]);
+                otherVertices.Add(sliceFacePointDatas[i][0].pos);
+                otherUV.Add(otherUV[sliceFacePointDatas[i][0].triIndex2]);
                 otherNormal.Add(plane.normal);
                 int index0A = meshVertices.Count - 1;
                 int index0B = otherVertices.Count - 1;
@@ -131,24 +164,24 @@ public class MeshSlider : MeshSliderSimple
                 int index1B;
 
                 //add point2
-                meshVertices.Add(slideFacePointDatas[i][1].pos);
-                meshUV.Add(meshUV[slideFacePointDatas[i][1].triIndex1]);
+                meshVertices.Add(sliceFacePointDatas[i][1].pos);
+                meshUV.Add(meshUV[sliceFacePointDatas[i][1].triIndex1]);
                 meshNormal.Add(-plane.normal);
-                otherVertices.Add(slideFacePointDatas[i][1].pos);
-                otherUV.Add(otherUV[slideFacePointDatas[i][1].triIndex2]);
+                otherVertices.Add(sliceFacePointDatas[i][1].pos);
+                otherUV.Add(otherUV[sliceFacePointDatas[i][1].triIndex2]);
                 otherNormal.Add(plane.normal);
                 int index2A = meshVertices.Count - 1;
                 int index2B = otherVertices.Count - 1;
 
-                for (int j = 1; j < slideFacePointDatas[i].Count - 1; j++)
+                for (int j = 1; j < sliceFacePointDatas[i].Count - 1; j++)
                 {
                     index1A = index2A;
                     index1B = index2B;
-                    meshVertices.Add(slideFacePointDatas[i][j + 1].pos);
-                    meshUV.Add(meshUV[slideFacePointDatas[i][j + 1].triIndex1]);
+                    meshVertices.Add(sliceFacePointDatas[i][j + 1].pos);
+                    meshUV.Add(meshUV[sliceFacePointDatas[i][j + 1].triIndex1]);
                     meshNormal.Add(-plane.normal);
-                    otherVertices.Add(slideFacePointDatas[i][j + 1].pos);
-                    otherUV.Add(otherUV[slideFacePointDatas[i][j + 1].triIndex2]);
+                    otherVertices.Add(sliceFacePointDatas[i][j + 1].pos);
+                    otherUV.Add(otherUV[sliceFacePointDatas[i][j + 1].triIndex2]);
                     otherNormal.Add(plane.normal);
                     index2A = meshVertices.Count - 1;
                     index2B = otherVertices.Count - 1;
@@ -166,25 +199,25 @@ public class MeshSlider : MeshSliderSimple
 
     void subdividePointDatas()
     {
-        Debug.Log(slideFacePointDatas.Count);
-        int orgCount = slideFacePointDatas.Count;
+        Debug.Log(sliceFacePointDatas.Count);
+        int orgCount = sliceFacePointDatas.Count;
         for (int i = 0, c = 0; i < orgCount; c++)
         {
-            if (c > 5000)//(Error?)
+            if (c > 5000)//(不應該發生)
             {
                 Debug.LogError("Loop over 5000");
                 break;
             }
 
             bool haveConcave = false;
-            for (int j = 0; j < slideFacePointDatas[i].Count; j++)
+            for (int j = 0; j < sliceFacePointDatas[i].Count; j++)
             {
-                PointData point = slideFacePointDatas[i][j];
-                if (!point.computed) computePoint(point, slideFacePointDatas[i], j);
+                PointData point = sliceFacePointDatas[i][j];
+                if (!point.computed) computePoint(point, sliceFacePointDatas[i], j);
                 
                 if (point.isConcave)
                 {
-                    debugDrawWireCube(slideFacePointDatas[i][j].pos, 0.5f, Color.red);
+                    debugDrawWireCube(sliceFacePointDatas[i][j].pos, 0.5f, Color.red);
                     Debug.Log(point.angle + " " + point.isConcave);
                     haveConcave = true;
                     float accAngle = point.angle - 360;
@@ -192,7 +225,7 @@ public class MeshSlider : MeshSliderSimple
                     int connectCount = 0;
                     for (int k = j + 1, c2 = 0; ; k++, c2++)
                     {
-                        if (c2 > 5000)//(Error?)
+                        if (c2 > 5000)//(不應該發生)
                         {
                             Debug.LogError("Loop over 5000");
                             haveConcave = false;
@@ -205,18 +238,20 @@ public class MeshSlider : MeshSliderSimple
                             break;
                         }
 
-                        if (k > slideFacePointDatas[i].Count - 1) k = 0;
-                        PointData point2 = slideFacePointDatas[i][k];
-                        if (!point2.computed) computePoint(point2, slideFacePointDatas[i], k);
+                        if (k > sliceFacePointDatas[i].Count - 1) k = 0;
+                        PointData point2 = sliceFacePointDatas[i][k];
+                        if (!point2.computed) computePoint(point2, sliceFacePointDatas[i], k);
                         if(point2.angle != 0) connectCount++;
                         Debug.Log(point2.angle + " " + point2.isConcave + " " + k);
 
                         if (point2.isConcave)//遇到另一個凸角
                         {
-                            debugDrawWireCube(slideFacePointDatas[i][k].pos, 0.2f, Color.yellow);
+                            debugDrawWireCube(sliceFacePointDatas[i][k].pos, 0.2f, Color.yellow);
+                            //int indexDelta = Mathf.Abs(k - j);
+                            //if (indexDelta < 2 || indexDelta == sliceFacePointDatas[i].Count - 1)//遇到的是在相鄰格
                             if (connectCount < 2)//遇到的是在相鄰格
                             {
-                                //if (k == j + 1 || (j == slideFacePointDatas[i].Count - 1 && k == 0))//遇到在下一格
+                                //if (k == j + 1 || (j == sliceFacePointDatas[i].Count - 1 && k == 0))//遇到在下一格
                                 {
                                     j = k;
                                     point = point2;
@@ -225,11 +260,11 @@ public class MeshSlider : MeshSliderSimple
                                     continue;
                                 }
                                 //else//遇到在前一格(不應該發生)
-                                { Debug.LogError("Concave error: Concave behind point " + k + " " + j + " " + slideFacePointDatas[i].Count); }
+                                { Debug.LogError("Concave error: Concave behind point " + k + " " + j + " " + sliceFacePointDatas[i].Count); }
                             }
                             else//正常切割
                             {
-                                slidePoints(slideFacePointDatas[i], j, k);
+                                slicePoints(sliceFacePointDatas[i], j, k);
                                 Debug.Log("Slide concave");
                             }
 
@@ -237,12 +272,12 @@ public class MeshSlider : MeshSliderSimple
                         }
                         else
                         {
-                            if (point2.angle != 0) debugDrawWireCube(slideFacePointDatas[i][k].pos, 0.2f, Color.green);
-                            else debugDrawWireCube(slideFacePointDatas[i][k].pos, 0.15f, Color.blue);
+                            if (point2.angle != 0) debugDrawWireCube(sliceFacePointDatas[i][k].pos, 0.2f, Color.green);
+                            else debugDrawWireCube(sliceFacePointDatas[i][k].pos, 0.15f, Color.blue);
                             accAngle += point2.angle;
                             if (accAngle > 180)//累積角度>180
                             {
-                                slidePoints(slideFacePointDatas[i], j, k);
+                                slicePoints(sliceFacePointDatas[i], j, k);
                                 Debug.Log("Slide accAngle");
                                 break;
                             }
@@ -275,7 +310,7 @@ public class MeshSlider : MeshSliderSimple
         point.computeAngle(plane, pointDatas[prevIndex].pos, pointDatas[nextIndex].pos);
     }
 
-    void slidePoints(List<PointData> pointList, int startIndex, int endIndex)
+    void slicePoints(List<PointData> pointList, int startIndex, int endIndex)
     {
         Debug.DrawLine(pointList[startIndex].pos, pointList[endIndex].pos, Color.red);
         if (startIndex == endIndex)
@@ -292,7 +327,7 @@ public class MeshSlider : MeshSliderSimple
 
         if (startIndex < endIndex)
         {
-            slideFacePointDatas.Add(new List<PointData>(pointList.GetRange(startIndex, endIndex - startIndex + 1)));
+            sliceFacePointDatas.Add(new List<PointData>(pointList.GetRange(startIndex, endIndex - startIndex + 1)));
 
             int startPrevIndex = startIndex - 1;
             if (startPrevIndex < 0) startPrevIndex = pointList.Count - 1;
@@ -310,7 +345,7 @@ public class MeshSlider : MeshSliderSimple
             List<PointData> newList = new List<PointData>();
             newList = pointList.GetRange(startIndex, pointList.Count - startIndex);
             newList.AddRange(pointList.GetRange(0, endIndex + 1));
-            slideFacePointDatas.Add(newList);
+            sliceFacePointDatas.Add(newList);
 
             //切完後重新計算頭尾
             computePoint(pointList[startIndex], pointList, startIndex, startIndex - 1, endIndex);
